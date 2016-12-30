@@ -1,0 +1,15 @@
+.chessrow {
+    height: 12.5vh;
+}
+
+.chesscolumn {
+    width: 12.5vh;
+    padding: 0;
+}
+
+.chesspiece {
+    max-height: 10vh;
+    display: block;
+    margin: auto;
+    min-width: 10vh;
+}
