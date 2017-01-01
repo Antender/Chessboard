@@ -10,7 +10,7 @@ import Types exposing (..)
 
 view model =
   let viewRowSelection =
-    viewRow model.selection
+    viewRow model.destinations model.selection
   in
     table [
       style [
@@ -18,16 +18,16 @@ view model =
         "border-collapse" => "collapse"]]
       [tbody [] (Array.toList (Array.indexedMap viewRowSelection model.board))]
 
-viewRow selection rowindex row =
+viewRow destinations selection rowindex row =
   tr [class "chessrow"] (Array.toList (Array.indexedMap (\colindex piece ->
-    td [fieldcolor selection rowindex colindex, class "chesscolumn", onClick (Clicked (rowindex,colindex))] [
+    td [fieldcolor destinations selection rowindex colindex, class "chesscolumn", onClick (Clicked { x = colindex, y = rowindex })] [
       pieceImage piece
     ]) row))
 
-fieldcolor selection rowindex columnindex =
+fieldcolor destinations selection rowindex columnindex =
   let selected =
     case selection of
-      Just (rowselection, columnselection) -> rowselection == rowindex && columnselection == columnindex
+      Just { x , y} -> x == columnindex && y == rowindex
       _ -> False
   in
     style [
@@ -35,31 +35,34 @@ fieldcolor selection rowindex columnindex =
         if selected then
          "green"
         else
-          if
-            (rowindex + columnindex) % 2 == 0
-          then
-            "lightgrey"
+          if List.member { x = columnindex, y = rowindex} destinations then
+            "blue"
           else
-            "grey"
+            if
+              (rowindex + columnindex) % 2 == 0
+            then
+              "lightgrey"
+            else
+              "grey"
   ]
 
-pieceImage cell =
-  case cell of
+pieceImage entity =
+  case entity of
     Nothing -> Html.text ""
     Just piece ->
       Html.img [
         src
           (case piece of
-            WhiteKing   -> "chess_pieces/kwo.svg"
-            BlackKing   -> "chess_pieces/kbr.svg"
-            WhiteQueen  -> "chess_pieces/qwo.svg"
-            BlackQueen  -> "chess_pieces/qbr.svg"
-            WhiteRook   -> "chess_pieces/rwo.svg"
-            BlackRook   -> "chess_pieces/rbr.svg"
-            WhiteBishop -> "chess_pieces/bwo.svg"
-            BlackBishop -> "chess_pieces/bbr.svg"
-            WhiteKnight -> "chess_pieces/kwo.svg"
-            BlackKnight -> "chess_pieces/kbr.svg"
-            WhitePawn   -> "chess_pieces/pwo.svg"
-            BlackPawn   -> "chess_pieces/pbr.svg")
+            (White, King)   -> "chess_pieces/kwo.svg"
+            (Black, King)   -> "chess_pieces/kbr.svg"
+            (White, Queen)  -> "chess_pieces/qwo.svg"
+            (Black, Queen)  -> "chess_pieces/qbr.svg"
+            (White, Rook)   -> "chess_pieces/rwo.svg"
+            (Black, Rook)   -> "chess_pieces/rbr.svg"
+            (White, Bishop) -> "chess_pieces/bwo.svg"
+            (Black, Bishop) -> "chess_pieces/bbr.svg"
+            (White, Knight) -> "chess_pieces/nwo.svg"
+            (Black, Knight) -> "chess_pieces/nbr.svg"
+            (White, Pawn)   -> "chess_pieces/pwo.svg"
+            (Black, Pawn)   -> "chess_pieces/pbr.svg")
           , class "chesspiece"] []
