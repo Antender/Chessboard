@@ -5,6 +5,7 @@ import List
 import Maybe exposing (..)
 
 import Types exposing (..)
+import Point exposing (Point)
 
 init =
   {
@@ -75,72 +76,43 @@ traverse board color path position directionX directionY =
       Nothing -> path
 
 findDestinations selection board =
-  let cellContents =
-    getCell board selection |> withDefault Nothing
-  in
-  let selectionColor =
-    case cellContents of
-      Nothing -> White
-      Just (color, _) -> color
-  in
-  let filterPassable cellList =
-    List.filter (canMoveToCell selectionColor board) cellList
-  in
-  let traverseBoard =
-    traverse board selectionColor []
-  in
-  let traverseBishop =
-    List.concat [
-      traverseBoard {selection | x = selection.x - 1, y = selection.y - 1} -1 -1,
-      traverseBoard {selection | x = selection.x - 1, y = selection.y + 1} -1  1,
-      traverseBoard {selection | x = selection.x + 1, y = selection.y - 1}  1 -1,
-      traverseBoard {selection | x = selection.x + 1, y = selection.y + 1}  1  1
-    ]
-  in
-  let traverseRook =
-    List.concat [
-      traverseBoard {selection | x = selection.x - 1} -1  0,
-      traverseBoard {selection | x = selection.x + 1}  1  0,
-      traverseBoard {selection | y = selection.y - 1}  0 -1,
-      traverseBoard {selection | y = selection.y + 1}  0  1
-    ]
+  let
+    cellContents =
+      getCell board selection |> withDefault Nothing
+    selectionColor =
+      case cellContents of
+        Nothing -> White
+        Just (color, _) -> color
+    filterPassable cellList =
+      List.filter (canMoveToCell selectionColor board) cellList
+    checkRelative point directions =
+      filterPassable (List.map (\el ->
+        let (x,y) = el in
+          Point.incr x y point)
+            directions)
+    traverseBoard points =
+      List.concat (
+        List.map (\point ->
+          let (x,y) = point in
+            traverse board selectionColor [] (Point.incr x y selection) x y)
+          points)
+    traverseBishop =
+      traverseBoard [(-1,-1),(-1,1),(1,-1),(1,1)]
+    traverseRook =
+      traverseBoard [(-1,0),(1,0),(0,-1),(0,1)]
   in
     case cellContents of
       Nothing -> []
       Just (color, Pawn) ->
         case color of
           White ->
-            filterPassable [
-              {selection | x = selection.x - 1, y = selection.y - 1},
-              {selection | x = selection.x + 1, y = selection.y - 1}
-            ]
+            checkRelative selection [(-1,-1),(1,-1)]
           Black ->
-            filterPassable [
-              {selection | x = selection.x - 1, y = selection.y + 1},
-              {selection | x = selection.x + 1, y = selection.y + 1}
-            ]
+            checkRelative selection [(-1,1),(1,1)]
       Just (color, King) ->
-        filterPassable [
-          {selection | x = selection.x - 1, y = selection.y - 1},
-          {selection | x = selection.x - 1, y = selection.y    },
-          {selection | x = selection.x - 1, y = selection.y + 1},
-          {selection | x = selection.x    , y = selection.y - 1},
-          {selection | x = selection.x    , y = selection.y + 1},
-          {selection | x = selection.x + 1, y = selection.y - 1},
-          {selection | x = selection.x + 1, y = selection.y    },
-          {selection | x = selection.x + 1, y = selection.y + 1}
-        ]
+        checkRelative selection [(-1,-1),(-1,0),(-1,1),(0,-1),(0,1),(1,-1),(1,0),(1,1)]
       Just (color, Knight) ->
-        filterPassable [
-          {selection | x = selection.x - 2, y = selection.y + 1},
-          {selection | x = selection.x - 2, y = selection.y - 1},
-          {selection | x = selection.x + 2, y = selection.y + 1},
-          {selection | x = selection.x + 2, y = selection.y - 1},
-          {selection | x = selection.x + 1, y = selection.y - 2},
-          {selection | x = selection.x - 1, y = selection.y - 2},
-          {selection | x = selection.x + 1, y = selection.y + 2},
-          {selection | x = selection.x - 1, y = selection.y + 2}
-        ]
+        checkRelative selection [(-2,1),(-2,-1),(2,1),(2,-1),(1,-2),(-1,-2),(1,2),(-1,2)]
       Just (color, Bishop) ->
         traverseBishop
       Just (color, Rook) ->

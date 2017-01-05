@@ -1,6 +1,6 @@
 module Types exposing (..)
 
-type alias Point = { x : Int, y : Int}
+import Point exposing (Point)
 
 type Msg = Clicked Point
 
