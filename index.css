@@ -5,11 +5,22 @@
 .chesscolumn {
     width: 12.5vh;
     padding: 0;
+    overflow: hidden;
+    box-sizing: border-box;
 }
 
 .chesspiece {
-    max-height: 10vh;
+    max-height: 12.5vh;
     display: block;
     margin: auto;
-    min-width: 10vh;
+    min-width: 12.5vh;
+    box-sizing: border-box;
+}
+
+.emptypiece {
+    min-height: 12.5vh;
+    display: block;
+    margin: auto;
+    min-width: 12.5vh;
+    box-sizing: border-box;
 }

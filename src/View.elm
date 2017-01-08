@@ -15,40 +15,43 @@ view model =
     table [
       style [
         "height" => "100vh",
-        "border-collapse" => "collapse"]]
+        "border-collapse" => "collapse",
+        "table-layout" => "fixed"]]
       [tbody [] (Array.toList (Array.indexedMap viewRowSelection model.board))]
 
 viewRow destinations selection rowindex row =
-  tr [class "chessrow"] (Array.toList (Array.indexedMap (\colindex piece ->
-    td [fieldcolor destinations selection rowindex colindex, class "chesscolumn", onClick (Clicked { x = colindex, y = rowindex })] [
-      pieceImage piece
-    ]) row))
+    tr [class "chessrow"] (Array.toList (Array.indexedMap (\colindex piece ->
+      let selected =
+        case selection of
+          Just { x , y} -> x == colindex && y == rowindex
+          _ -> False
+        in
+          td [fieldcolor destinations selection rowindex colindex selected, class "chesscolumn", onClick (Clicked { x = colindex, y = rowindex })] [
+            pieceImage piece (
+              style [
+                "border" =>
+                  if selected then
+                    "thick solid green"
+                  else
+                    if List.member { x = colindex, y = rowindex} destinations then
+                      "thick solid blue"
+                    else
+                      "none"
+            ])
+          ]) row))
 
-fieldcolor destinations selection rowindex columnindex =
-  let selected =
-    case selection of
-      Just { x , y} -> x == columnindex && y == rowindex
-      _ -> False
-  in
-    style [
-      "backgroundColor" =>
-        if selected then
-         "green"
-        else
-          if List.member { x = columnindex, y = rowindex} destinations then
-            "blue"
-          else
-            if
-              (rowindex + columnindex) % 2 == 0
-            then
-              "lightgrey"
-            else
-              "grey"
+fieldcolor destinations selection rowindex colindex selected =
+  style [
+    "backgroundColor" =>
+      if (rowindex + colindex) % 2 == 0 then
+        "lightgrey"
+      else
+        "grey"
   ]
 
-pieceImage entity =
+pieceImage entity style =
   case entity of
-    Nothing -> Html.text ""
+    Nothing -> Html.div [class "emptypiece", style] []
     Just piece ->
       Html.img [
         src
@@ -65,4 +68,4 @@ pieceImage entity =
             (Black, Knight) -> "chess_pieces/nbr.svg"
             (White, Pawn)   -> "chess_pieces/pwo.svg"
             (Black, Pawn)   -> "chess_pieces/pbr.svg")
-          , class "chesspiece"] []
+          , class "chesspiece", style] []
