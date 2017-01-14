@@ -1,12 +1,18 @@
 module Update exposing (init, update)
 
-import Array
+import Array exposing (Array)
+import Array2D
 import List
 import Maybe exposing (..)
 
 import Types exposing (..)
 import Point exposing (Point)
 
+init : {
+  selection : Maybe Point,
+  destinations : List Point,
+  board : Array (Array (Maybe (Color,Piece)))
+}
 init =
   {
     selection = Nothing,
@@ -31,35 +37,41 @@ update msg model =
   case msg of
     Clicked point ->
       case model.selection of
-        Nothing -> {model | selection = Just point, destinations = findDestinations point model.board}
-        _ -> {model | selection = Nothing, destinations = []}
+        Nothing ->
+          case (Array2D.get point model.board |> Maybe.withDefault Nothing) of
+            Nothing -> model
+            _ -> { model | selection = Just point, destinations = findDestinations point model.board }
+        Just selection ->
+          if List.member point model.destinations then
+            { model | selection = Nothing, destinations = [],
+              board =
+                Array2D.set
+                  point
+                  (Array2D.get selection model.board |> Maybe.withDefault Nothing)
+                  (Array2D.set selection Nothing model.board)}
+          else
+            {model | selection = Nothing, destinations = []}
 
 opposite color =
   case color of
     White -> Black
     Black -> White
 
-getCell board point =
-  Array.get point.y board |> andThen (Array.get point.x)
-
-canMoveToCell color board point =
+canMoveToCell color board onEmpty onOpposite point =
   let cell =
-    getCell board point
+    Array2D.get point board
   in
     case cell of
       Just cellContents ->
         case cellContents of
-          Nothing -> True
+          Nothing -> onEmpty
           Just (piececolor, _) ->
-            if piececolor == opposite color then
-              True
-            else
-              False
+            onOpposite (piececolor == opposite color)
       Nothing -> False
 
 traverse board color path position directionX directionY =
   let cell =
-    getCell board position
+    Array2D.get position board
   in
     case cell of
       Just cellContents ->
@@ -78,18 +90,18 @@ traverse board color path position directionX directionY =
 findDestinations selection board =
   let
     cellContents =
-      getCell board selection |> withDefault Nothing
+      Array2D.get selection board |> withDefault Nothing
     selectionColor =
       case cellContents of
         Nothing -> White
         Just (color, _) -> color
-    filterPassable cellList =
-      List.filter (canMoveToCell selectionColor board) cellList
-    checkRelative point directions =
+    filterPassable cellList onEmpty onOpposite =
+      List.filter (canMoveToCell selectionColor board onEmpty onOpposite) cellList
+    canMoveRelative point directions onEmpty onOpposite =
       filterPassable (List.map (\el ->
         let (x,y) = el in
           Point.incr x y point)
-            directions)
+            directions) onEmpty onOpposite
     traverseBoard points =
       List.concat (
         List.map (\point ->
@@ -106,13 +118,13 @@ findDestinations selection board =
       Just (color, Pawn) ->
         case color of
           White ->
-            checkRelative selection [(-1,-1),(1,-1)]
+            List.concat [canMoveRelative selection [(-1,-1),(1,-1)] False identity, canMoveRelative selection [(0,-1)] True (always False)]
           Black ->
-            checkRelative selection [(-1,1),(1,1)]
+            List.concat [canMoveRelative selection [(-1,1),(1,1)] False identity, canMoveRelative selection [(0,1)] True (always False)]
       Just (color, King) ->
-        checkRelative selection [(-1,-1),(-1,0),(-1,1),(0,-1),(0,1),(1,-1),(1,0),(1,1)]
+        canMoveRelative selection [(-1,-1),(-1,0),(-1,1),(0,-1),(0,1),(1,-1),(1,0),(1,1)] False identity
       Just (color, Knight) ->
-        checkRelative selection [(-2,1),(-2,-1),(2,1),(2,-1),(1,-2),(-1,-2),(1,2),(-1,2)]
+        canMoveRelative selection [(-2,1),(-2,-1),(2,1),(2,-1),(1,-2),(-1,-2),(1,2),(-1,2)] False identity
       Just (color, Bishop) ->
         traverseBishop
       Just (color, Rook) ->

@@ -30,24 +30,27 @@ viewRow destinations selection rowindex row =
             pieceImage piece (
               style [
                 "border" =>
-                  if selected then
-                    "thick solid green"
-                  else
-                    if List.member { x = colindex, y = rowindex} destinations then
-                      "thick solid blue"
+                  ("thick solid " ++
+                    if selected then
+                      "green"
                     else
-                      "none"
+                      if List.member { x = colindex, y = rowindex} destinations then
+                        "blue"
+                      else
+                        checkPattern rowindex colindex)
             ])
           ]) row))
 
 fieldcolor destinations selection rowindex colindex selected =
   style [
-    "backgroundColor" =>
-      if (rowindex + colindex) % 2 == 0 then
-        "lightgrey"
-      else
-        "grey"
+    "backgroundColor" => checkPattern rowindex colindex
   ]
+
+checkPattern row column =
+  if (row + column) % 2 == 0 then
+    "lightgrey"
+  else
+    "grey"
 
 pieceImage entity style =
   case entity of
